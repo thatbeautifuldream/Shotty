@@ -1,5 +1,11 @@
 # Shotty
 
+<p float="left">
+  <img width="49%" height="1278" alt="IMG_0042" src="https://github.com/user-attachments/assets/de83400a-2d43-4c9e-a099-7f71eca75478" />
+  <img width="49%" height="1278" alt="IMG_0041" src="https://github.com/user-attachments/assets/1b5dd243-9d8c-4e82-8de1-e1c4f22de01d" />
+</p>
+
+
 An on-device-only screenshot organizer for iPhone and iPad. It uses PhotoKit to fetch screenshots, Vision OCR to extract text, NaturalLanguage for lightweight local language tags, and SwiftData for the local index.
 
 No server, OpenAI API, Firebase, Supabase, or cloud OCR is used.

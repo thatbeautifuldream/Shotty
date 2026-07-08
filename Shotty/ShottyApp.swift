@@ -16,12 +16,22 @@ struct ShottyApp: App {
 
 private enum ModelContainerFactory {
     static func make() -> ModelContainer {
+        createApplicationSupportDirectory()
+
         do {
             return try ModelContainer(for: ScreenshotRecord.self)
         } catch {
             resetDefaultStore()
             return try! ModelContainer(for: ScreenshotRecord.self)
         }
+    }
+
+    private static func createApplicationSupportDirectory() {
+        guard let supportDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return
+        }
+
+        try? FileManager.default.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
     }
 
     private static func resetDefaultStore() {

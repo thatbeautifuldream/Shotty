@@ -9,10 +9,9 @@ struct ContentView: View {
 
     @StateObject private var indexer = ScreenshotIndexer()
     @State private var searchText = ""
-    @State private var spotlightRankedIDs: [String] = []
 
     private var searchResults: [ScreenshotSearchResult] {
-        ScreenshotSearch.rank(records, query: searchText, spotlightRankedIDs: spotlightRankedIDs)
+        ScreenshotSearch.rank(records, query: searchText)
     }
 
     var body: some View {
@@ -43,9 +42,6 @@ struct ContentView: View {
             }
             .task(id: records.map(\.localIdentifier).joined(separator: "|")) {
                 await SpotlightIndexer.index(records)
-            }
-            .task(id: searchText) {
-                spotlightRankedIDs = await SpotlightIndexer.matchingIdentifiers(for: searchText)
             }
         }
     }
@@ -184,7 +180,7 @@ private struct ScreenshotSearchResult: Identifiable {
 }
 
 private enum ScreenshotSearch {
-    static func rank(_ records: [ScreenshotRecord], query: String, spotlightRankedIDs: [String]) -> [ScreenshotSearchResult] {
+    static func rank(_ records: [ScreenshotRecord], query: String) -> [ScreenshotSearchResult] {
         let normalizedQuery = normalize(query)
 
         guard !normalizedQuery.isEmpty else {
@@ -194,7 +190,6 @@ private enum ScreenshotSearch {
         }
 
         let queryTokens = tokens(in: normalizedQuery)
-        let spotlightRanks = Dictionary(uniqueKeysWithValues: spotlightRankedIDs.enumerated().map { ($0.element, $0.offset) })
 
         return records
             .compactMap { record -> ScreenshotSearchResult? in
@@ -203,8 +198,7 @@ private enum ScreenshotSearch {
                 let suggestedTagScore = score(tags: record.visibleSuggestedTags, query: normalizedQuery, exact: 70, partial: 50)
                 let ocrScore = normalize(record.extractedText).contains(normalizedQuery) ? 25 : 0
                 let tokenScore = tokenScore(for: record, queryTokens: queryTokens)
-                let spotlightScore = spotlightRanks[record.localIdentifier].map { max(8, 48 - $0) } ?? 0
-                let totalScore = userTagScore + fileNameScore + suggestedTagScore + ocrScore + tokenScore + spotlightScore
+                let totalScore = userTagScore + fileNameScore + suggestedTagScore + ocrScore + tokenScore
 
                 guard totalScore > 0 else { return nil }
 
@@ -216,8 +210,7 @@ private enum ScreenshotSearch {
                         fileNameScore: fileNameScore,
                         suggestedTagScore: suggestedTagScore,
                         ocrScore: ocrScore,
-                        tokenScore: tokenScore,
-                        spotlightScore: spotlightScore
+                        tokenScore: tokenScore
                     )
                 )
             }
@@ -258,14 +251,12 @@ private enum ScreenshotSearch {
         fileNameScore: Int,
         suggestedTagScore: Int,
         ocrScore: Int,
-        tokenScore: Int,
-        spotlightScore: Int
+        tokenScore: Int
     ) -> String {
         if userTagScore > 0 { return "Tag match" }
         if fileNameScore > 0 { return "Filename match" }
         if suggestedTagScore > 0 { return "Suggested tag match" }
         if ocrScore > 0 { return "Text match" }
-        if spotlightScore > 0 { return "Semantic match" }
         if tokenScore > 0 { return "Word match" }
         return "Match"
     }

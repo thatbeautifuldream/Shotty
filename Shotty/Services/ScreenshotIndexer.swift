@@ -28,10 +28,15 @@ final class ScreenshotIndexer: ObservableObject {
         }
     }
 
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: State = .idle {
+        didSet {
+            handleStateChange()
+        }
+    }
     @Published private(set) var authorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
 
     private let classifier = ScreenshotClassifier()
+    private var completionResetTask: Task<Void, Never>?
 
     func refreshAuthorizationStatus() {
         authorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
@@ -165,6 +170,21 @@ final class ScreenshotIndexer: ObservableObject {
 
     var hasPhotoAccess: Bool {
         authorizationStatus == .authorized || authorizationStatus == .limited
+    }
+
+    private func handleStateChange() {
+        completionResetTask?.cancel()
+        completionResetTask = nil
+
+        guard case .complete = state else { return }
+
+        completionResetTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, !Task.isCancelled else { return }
+            withAnimation(.snappy(duration: 0.32)) {
+                self.state = .idle
+            }
+        }
     }
 
     private func fetchScreenshotAssets() -> [PHAsset] {

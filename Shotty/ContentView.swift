@@ -7,7 +7,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ScreenshotRecord.capturedAt, order: .reverse) private var records: [ScreenshotRecord]
 
-    @AppStorage(AppPreferences.spotlightIncludesExtractedTextKey) private var spotlightIncludesExtractedText = false
+    @AppStorage(AppPreferences.spotlightIncludesExtractedTextKey) private var spotlightIncludesExtractedText = true
     @StateObject private var indexer = ScreenshotIndexer()
     @State private var searchText = ""
     @State private var rankedResults: [ScreenshotSearchResult] = []
@@ -33,21 +33,17 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search screenshots")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        Task { await indexer.indexScreenshots(in: modelContext) }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        AppSettingsView()
                     } label: {
-                        Label("Scan", systemImage: "arrow.clockwise")
+                        Image(systemName: "gearshape")
                     }
-                    .disabled(indexer.state.isIndexing)
+                    .accessibilityLabel("Settings")
                 }
             }
             .task {
-                await synchronizeLibraryState()
-
-                if indexer.hasPhotoAccess && records.isEmpty {
-                    await indexer.indexScreenshots(in: modelContext)
-                }
+                await refreshInboxFromPhotos()
             }
             .task(id: spotlightIncludesExtractedText) {
                 await SpotlightIndexer.index(records)
@@ -57,7 +53,7 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase) { _, newPhase in
                 guard newPhase == .active else { return }
-                Task { await synchronizeLibraryState() }
+                Task { await refreshInboxFromPhotos() }
             }
         }
     }
@@ -102,20 +98,12 @@ struct ContentView: View {
 
                 statusRow
 
-                if indexer.hasPhotoAccess {
-                    Toggle("Include OCR text in Spotlight", isOn: $spotlightIncludesExtractedText)
-                        .font(.callout)
-                        .tint(.primary)
-
-                    Text("By default Shotty keeps OCR text inside the app. Turn this on only if you want screenshot text searchable from system Spotlight.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
                 if !indexer.hasPhotoAccess {
                     Button {
-                        Task { await indexer.requestAccess() }
+                        Task {
+                            await indexer.requestAccess()
+                            await refreshInboxFromPhotos()
+                        }
                     } label: {
                         Label("Allow Photos Access", systemImage: "photo.on.rectangle")
                             .font(.headline)
@@ -138,7 +126,7 @@ struct ContentView: View {
                 ContentUnavailableView(
                     records.isEmpty ? "No Screenshots Indexed" : "No Matches",
                     systemImage: records.isEmpty ? "photo.stack" : "magnifyingglass",
-                    description: Text(records.isEmpty ? "Allow Photos access, then scan to build a private local index." : "Try another search term or tag.")
+                    description: Text(records.isEmpty ? "Allow Photos access and Shotty will automatically build your private local index." : "Try another search term or tag.")
                 )
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 28)
@@ -175,16 +163,19 @@ struct ContentView: View {
 
     private var summaryText: String {
         if indexer.hasPhotoAccess {
-            "Screenshots are scanned with on-device OCR and stored in a local index."
+            "New screenshots are indexed automatically on this device and stored in a local searchable inbox."
         } else {
-            "Allow Photos access when you are ready to scan screenshots on this device."
+            "Allow Photos access to automatically index screenshots on this device."
         }
     }
 
     @MainActor
-    private func synchronizeLibraryState() async {
+    private func refreshInboxFromPhotos() async {
         indexer.refreshAuthorizationStatus()
         await indexer.reconcileLibrary(in: modelContext)
+
+        guard indexer.hasPhotoAccess else { return }
+        await indexer.indexScreenshots(in: modelContext)
     }
 
     @MainActor

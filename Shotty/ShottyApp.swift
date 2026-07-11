@@ -25,6 +25,7 @@ private enum AppLaunchState {
     case failed(String)
 
     static func make() -> AppLaunchState {
+        AppPreferences.registerDefaults()
         createApplicationSupportDirectory()
 
         do {

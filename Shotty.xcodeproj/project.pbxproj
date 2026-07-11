@@ -23,6 +23,7 @@
 		11111111111111111111111E /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 222222222222222222222231 /* XCTest.framework */; };
 		11111111111111111111111F /* ScreenshotClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222F /* ScreenshotClassifierTests.swift */; };
 		111111111111111111111120 /* ScreenshotSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222230 /* ScreenshotSearchTests.swift */; };
+		111111111111111111111121 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222232 /* AppSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +55,7 @@
 		22222222222222222222222F /* ScreenshotClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotClassifierTests.swift; sourceTree = "<group>"; };
 		222222222222222222222230 /* ScreenshotSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotSearchTests.swift; sourceTree = "<group>"; };
 		222222222222222222222231 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		222222222222222222222232 /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +121,7 @@
 		444444444444444444444445 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				222222222222222222222232 /* AppSettingsView.swift */,
 				222222222222222222222224 /* HomeView.swift */,
 				222222222222222222222225 /* ActivityView.swift */,
 				222222222222222222222226 /* SettingsView.swift */,
@@ -249,6 +252,7 @@
 				111111111111111111111113 /* ScreenshotRecord.swift in Sources */,
 				111111111111111111111114 /* HomeView.swift in Sources */,
 				111111111111111111111115 /* ActivityView.swift in Sources */,
+				111111111111111111111121 /* AppSettingsView.swift in Sources */,
 				111111111111111111111116 /* SettingsView.swift in Sources */,
 				111111111111111111111118 /* ScreenshotClassifier.swift in Sources */,
 				111111111111111111111119 /* PhotoImageLoader.swift in Sources */,

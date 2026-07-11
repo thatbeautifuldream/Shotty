@@ -18,10 +18,10 @@ final class ScreenshotIndexer: ObservableObject {
 
         var message: String {
             switch self {
-            case .idle: "Ready"
+            case .idle: "Watching for new screenshots"
             case .requestingAccess: "Requesting Photos access"
             case let .indexing(current, total): "Indexing \(current) of \(total)"
-            case let .complete(indexed): "Indexed \(indexed) new screenshots"
+            case let .complete(indexed): indexed == 0 ? "Everything is up to date" : "Indexed \(indexed) new screenshots"
             case .denied: "Photos access is needed to build your inbox"
             case let .failed(message): message
             }
@@ -100,6 +100,8 @@ final class ScreenshotIndexer: ObservableObject {
     }
 
     func indexScreenshots(in context: ModelContext) async {
+        guard !state.isIndexing else { return }
+
         guard hasPhotoAccess else {
             await requestAccess()
             guard hasPhotoAccess else { return }

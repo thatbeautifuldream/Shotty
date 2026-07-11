@@ -1,17 +1,24 @@
-import NaturalLanguage
 import Photos
 import SwiftData
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ScreenshotRecord.capturedAt, order: .reverse) private var records: [ScreenshotRecord]
 
+    @AppStorage(AppPreferences.spotlightIncludesExtractedTextKey) private var spotlightIncludesExtractedText = false
     @StateObject private var indexer = ScreenshotIndexer()
     @State private var searchText = ""
+    @State private var rankedResults: [ScreenshotSearchResult] = []
 
-    private var searchResults: [ScreenshotSearchResult] {
-        ScreenshotSearch.rank(records, query: searchText)
+    private var searchResults: [DisplayedSearchResult] {
+        let recordsByID = Dictionary(uniqueKeysWithValues: records.map { ($0.localIdentifier, $0) })
+
+        return rankedResults.compactMap { result in
+            guard let record = recordsByID[result.recordID] else { return nil }
+            return DisplayedSearchResult(record: record, reason: result.reason)
+        }
     }
 
     var body: some View {
@@ -36,12 +43,21 @@ struct ContentView: View {
                 }
             }
             .task {
+                await synchronizeLibraryState()
+
                 if indexer.hasPhotoAccess && records.isEmpty {
                     await indexer.indexScreenshots(in: modelContext)
                 }
             }
-            .task(id: records.map(\.localIdentifier).joined(separator: "|")) {
+            .task(id: spotlightIncludesExtractedText) {
                 await SpotlightIndexer.index(records)
+            }
+            .task(id: SearchRefreshKey(query: searchText, snapshots: records.map(ScreenshotSearchSnapshot.init))) {
+                await refreshSearchResults()
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                guard newPhase == .active else { return }
+                Task { await synchronizeLibraryState() }
             }
         }
     }
@@ -85,6 +101,17 @@ struct ContentView: View {
                 }
 
                 statusRow
+
+                if indexer.hasPhotoAccess {
+                    Toggle("Include OCR text in Spotlight", isOn: $spotlightIncludesExtractedText)
+                        .font(.callout)
+                        .tint(.primary)
+
+                    Text("By default Shotty keeps OCR text inside the app. Turn this on only if you want screenshot text searchable from system Spotlight.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 if !indexer.hasPhotoAccess {
                     Button {
@@ -154,14 +181,29 @@ struct ContentView: View {
         }
     }
 
-}
-
-private extension ScreenshotIndexer.State {
-    var isIndexing: Bool {
-        if case .indexing = self { return true }
-        if case .requestingAccess = self { return true }
-        return false
+    @MainActor
+    private func synchronizeLibraryState() async {
+        indexer.refreshAuthorizationStatus()
+        await indexer.reconcileLibrary(in: modelContext)
     }
+
+    @MainActor
+    private func refreshSearchResults() async {
+        let snapshots = records.map(ScreenshotSearchSnapshot.init)
+        let query = searchText
+
+        if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            try? await Task.sleep(for: .milliseconds(120))
+        }
+
+        let results = await Task.detached(priority: .userInitiated) {
+            ScreenshotSearch.rank(snapshots, query: query)
+        }.value
+
+        guard !Task.isCancelled else { return }
+        rankedResults = results
+    }
+
 }
 
 private struct CountBadge: View {
@@ -178,121 +220,16 @@ private struct CountBadge: View {
     }
 }
 
-private struct ScreenshotSearchResult: Identifiable {
+private struct DisplayedSearchResult: Identifiable {
     let record: ScreenshotRecord
-    let score: Int
     let reason: String?
 
     var id: String { record.localIdentifier }
 }
 
-private enum ScreenshotSearch {
-    static func rank(_ records: [ScreenshotRecord], query: String) -> [ScreenshotSearchResult] {
-        let normalizedQuery = normalize(query)
-
-        guard !normalizedQuery.isEmpty else {
-            return records.map {
-                ScreenshotSearchResult(record: $0, score: 0, reason: nil)
-            }
-        }
-
-        let queryTokens = tokens(in: normalizedQuery)
-
-        return records
-            .compactMap { record -> ScreenshotSearchResult? in
-                let userTagScore = score(tags: record.userTags, query: normalizedQuery, exact: 120, partial: 90)
-                let fileNameScore = normalize(record.displayFileName).contains(normalizedQuery) ? 80 : 0
-                let suggestedTagScore = score(tags: record.visibleSuggestedTags, query: normalizedQuery, exact: 70, partial: 50)
-                let ocrScore = normalize(record.extractedText).contains(normalizedQuery) ? 25 : 0
-                let tokenScore = tokenScore(for: record, queryTokens: queryTokens)
-                let totalScore = userTagScore + fileNameScore + suggestedTagScore + ocrScore + tokenScore
-
-                guard totalScore > 0 else { return nil }
-
-                return ScreenshotSearchResult(
-                    record: record,
-                    score: totalScore,
-                    reason: reason(
-                        userTagScore: userTagScore,
-                        fileNameScore: fileNameScore,
-                        suggestedTagScore: suggestedTagScore,
-                        ocrScore: ocrScore,
-                        tokenScore: tokenScore
-                    )
-                )
-            }
-            .sorted { left, right in
-                if left.score == right.score {
-                    return left.record.capturedAt > right.record.capturedAt
-                }
-                return left.score > right.score
-            }
-    }
-
-    private static func score(tags: [String], query: String, exact: Int, partial: Int) -> Int {
-        tags.reduce(0) { result, tag in
-            let normalizedTag = normalize(tag)
-            if normalizedTag == query {
-                return result + exact
-            }
-            if normalizedTag.contains(query) {
-                return result + partial
-            }
-            return result
-        }
-    }
-
-    private static func tokenScore(for record: ScreenshotRecord, queryTokens: Set<String>) -> Int {
-        guard !queryTokens.isEmpty else { return 0 }
-
-        let tagText = (record.userTags + record.visibleSuggestedTags).joined(separator: " ")
-        let filenameMatches = queryTokens.intersection(tokens(in: record.displayFileName)).count
-        let tagMatches = queryTokens.intersection(tokens(in: tagText)).count
-        let textMatches = queryTokens.intersection(tokens(in: record.extractedText)).count
-
-        return min(filenameMatches * 12 + tagMatches * 16 + textMatches * 4, 44)
-    }
-
-    private static func reason(
-        userTagScore: Int,
-        fileNameScore: Int,
-        suggestedTagScore: Int,
-        ocrScore: Int,
-        tokenScore: Int
-    ) -> String {
-        if userTagScore > 0 { return "Tag match" }
-        if fileNameScore > 0 { return "Filename match" }
-        if suggestedTagScore > 0 { return "Suggested tag match" }
-        if ocrScore > 0 { return "Text match" }
-        if tokenScore > 0 { return "Word match" }
-        return "Match"
-    }
-
-    private static func tokens(in value: String) -> Set<String> {
-        let normalizedValue = normalize(value)
-        guard !normalizedValue.isEmpty else { return [] }
-
-        let tokenizer = NLTokenizer(unit: .word)
-        tokenizer.string = normalizedValue
-
-        var result = Set<String>()
-        tokenizer.enumerateTokens(in: normalizedValue.startIndex..<normalizedValue.endIndex) { range, attributes in
-            let token = String(normalizedValue[range])
-            if token.count > 1 || attributes.contains(.numeric) {
-                result.insert(token)
-            }
-            return true
-        }
-
-        return result
-    }
-
-    private static func normalize(_ value: String) -> String {
-        value
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-            .folding(options: [.diacriticInsensitive, .widthInsensitive], locale: .current)
-    }
+private struct SearchRefreshKey: Equatable {
+    let query: String
+    let snapshots: [ScreenshotSearchSnapshot]
 }
 
 #Preview {

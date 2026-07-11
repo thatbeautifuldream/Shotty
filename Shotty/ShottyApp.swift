@@ -3,26 +3,34 @@ import SwiftData
 
 @main
 struct ShottyApp: App {
-    private let modelContainer = ModelContainerFactory.make()
+    private let appState = AppLaunchState.make()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .tint(.primary)
+            switch appState {
+            case let .ready(modelContainer):
+                ContentView()
+                    .tint(.primary)
+                    .modelContainer(modelContainer)
+
+            case let .failed(errorDescription):
+                StartupFailureView(errorDescription: errorDescription)
+            }
         }
-        .modelContainer(modelContainer)
     }
 }
 
-private enum ModelContainerFactory {
-    static func make() -> ModelContainer {
+private enum AppLaunchState {
+    case ready(ModelContainer)
+    case failed(String)
+
+    static func make() -> AppLaunchState {
         createApplicationSupportDirectory()
 
         do {
-            return try ModelContainer(for: ScreenshotRecord.self)
+            return .ready(try ModelContainer(for: ScreenshotRecord.self))
         } catch {
-            resetDefaultStore()
-            return try! ModelContainer(for: ScreenshotRecord.self)
+            return .failed(error.localizedDescription)
         }
     }
 
@@ -33,16 +41,17 @@ private enum ModelContainerFactory {
 
         try? FileManager.default.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
     }
+}
 
-    private static func resetDefaultStore() {
-        let fileManager = FileManager.default
+private struct StartupFailureView: View {
+    let errorDescription: String
 
-        guard let supportDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return
-        }
-
-        for fileName in ["default.store", "default.store-shm", "default.store-wal"] {
-            try? fileManager.removeItem(at: supportDirectory.appendingPathComponent(fileName))
-        }
+    var body: some View {
+        ContentUnavailableView(
+            "Shotty Could Not Start",
+            systemImage: "externaldrive.badge.exclamationmark",
+            description: Text("The local screenshot index could not be opened. Existing on-device data was left untouched.\n\n\(errorDescription)")
+        )
+        .padding()
     }
 }

@@ -33,6 +33,20 @@ final class ScreenshotIndexer: ObservableObject {
 
     private let classifier = ScreenshotClassifier()
 
+    func refreshAuthorizationStatus() {
+        authorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+
+        guard !state.isIndexing else { return }
+
+        if hasPhotoAccess {
+            if case .denied = state {
+                state = .idle
+            }
+        } else {
+            state = .denied
+        }
+    }
+
     func requestAccess() async {
         state = .requestingAccess
         authorizationStatus = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
@@ -41,6 +55,47 @@ final class ScreenshotIndexer: ObservableObject {
             state = .denied
         } else {
             state = .idle
+        }
+    }
+
+    func reconcileLibrary(in context: ModelContext) async {
+        refreshAuthorizationStatus()
+
+        do {
+            let existingRecords = try context.fetch(FetchDescriptor<ScreenshotRecord>())
+
+            guard !existingRecords.isEmpty else { return }
+
+            if !hasPhotoAccess {
+                for record in existingRecords {
+                    context.delete(record)
+                }
+                try context.save()
+                await SpotlightIndexer.deleteAll()
+                return
+            }
+
+            let accessibleAssets = PHAsset.fetchAssets(
+                withLocalIdentifiers: existingRecords.map(\.localIdentifier),
+                options: nil
+            )
+
+            var accessibleIDs = Set<String>()
+            accessibleAssets.enumerateObjects { asset, _, _ in
+                accessibleIDs.insert(asset.localIdentifier)
+            }
+
+            let inaccessibleRecords = existingRecords.filter { !accessibleIDs.contains($0.localIdentifier) }
+            guard !inaccessibleRecords.isEmpty else { return }
+
+            for record in inaccessibleRecords {
+                context.delete(record)
+                await SpotlightIndexer.delete(localIdentifier: record.localIdentifier)
+            }
+
+            try context.save()
+        } catch {
+            state = .failed(error.localizedDescription)
         }
     }
 
@@ -219,5 +274,13 @@ private extension PHAsset {
         }
 
         return "Screenshot"
+    }
+}
+
+extension ScreenshotIndexer.State {
+    var isIndexing: Bool {
+        if case .indexing = self { return true }
+        if case .requestingAccess = self { return true }
+        return false
     }
 }

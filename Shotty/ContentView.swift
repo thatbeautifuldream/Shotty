@@ -79,7 +79,9 @@ struct ContentView: View {
 
                     Spacer()
 
-                    CountBadge(count: records.count)
+                    if !records.isEmpty {
+                        CountBadge(count: records.count)
+                    }
                 }
 
                 statusRow
@@ -89,8 +91,13 @@ struct ContentView: View {
                         Task { await indexer.requestAccess() }
                     } label: {
                         Label("Allow Photos Access", systemImage: "photo.on.rectangle")
+                            .font(.headline)
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 10)
+                            .background(.white, in: Capsule())
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.plain)
                     .controlSize(.regular)
                 }
             }

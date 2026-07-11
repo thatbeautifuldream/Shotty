@@ -168,13 +168,11 @@ struct ScreenshotDetailView: View {
         record.hiddenSuggestedTags.removeAll { $0 == tag }
         newTag = ""
         try? modelContext.save()
-        Task { await SpotlightIndexer.index(record) }
     }
 
     private func removeUserTag(_ tag: String) {
         record.userTags.removeAll { $0 == tag }
         try? modelContext.save()
-        Task { await SpotlightIndexer.index(record) }
     }
 
     private func acceptSuggestedTag(_ tag: String) {
@@ -185,7 +183,6 @@ struct ScreenshotDetailView: View {
         record.suggestedTags.removeAll { $0 == tag }
         record.hiddenSuggestedTags.removeAll { $0 == tag }
         try? modelContext.save()
-        Task { await SpotlightIndexer.index(record) }
     }
 
     private func hideSuggestedTag(_ tag: String) {
@@ -195,7 +192,6 @@ struct ScreenshotDetailView: View {
             record.hiddenSuggestedTags.sort()
         }
         try? modelContext.save()
-        Task { await SpotlightIndexer.index(record) }
     }
 
     private func copyExtractedText() {
@@ -223,7 +219,6 @@ struct ScreenshotDetailView: View {
 
             modelContext.delete(record)
             try modelContext.save()
-            await SpotlightIndexer.delete(localIdentifier: localIdentifier)
             dismiss()
         } catch {
             deleteError = error.localizedDescription
@@ -247,14 +242,10 @@ private struct EditableTagList: View {
                         Button {
                             onRemove(tag)
                         } label: {
-                            Text(tag)
-                                .font(.callout)
-                                .foregroundStyle(.primary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(.tertiary, in: Capsule())
+                            TagChip(title: tag, tone: .owned, accessorySystemImage: "xmark")
                         }
                         .buttonStyle(.plain)
+                        .contentShape(.rect)
                         .accessibilityLabel("Remove tag \(tag)")
                     }
                 }
@@ -278,31 +269,28 @@ private struct SuggestedTagList: View {
                         Button {
                             onAccept(tag)
                         } label: {
-                            Text(tag)
-                                .font(.callout)
-                                .foregroundStyle(.primary)
-                                .padding(.leading, 10)
-                                .padding(.vertical, 6)
+                            TagChip(title: tag, tone: .suggested, accessorySystemImage: "plus")
                         }
                         .buttonStyle(.plain)
+                        .contentShape(.rect)
                         .accessibilityLabel("Accept suggested tag \(tag)")
 
                         Button {
                             onHide(tag)
                         } label: {
-                            Text("?")
-                                .font(.caption)
+                            Image(systemName: "eye.slash")
+                                .font(.caption2.weight(.semibold))
                                 .foregroundStyle(.secondary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
+                                .frame(width: 30, height: 30)
+                                .background(Color(.secondarySystemBackground), in: Circle())
+                                .overlay {
+                                    Circle()
+                                        .strokeBorder(.white.opacity(0.06), lineWidth: 1)
+                                }
                         }
                         .buttonStyle(.plain)
+                        .contentShape(.rect)
                         .accessibilityLabel("Hide suggested tag \(tag)")
-                    }
-                    .background(.background, in: Capsule())
-                    .overlay {
-                        Capsule()
-                            .strokeBorder(.secondary.opacity(0.16))
                     }
                 }
             }

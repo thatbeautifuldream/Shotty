@@ -71,7 +71,6 @@ final class ScreenshotIndexer: ObservableObject {
                     context.delete(record)
                 }
                 try context.save()
-                await SpotlightIndexer.deleteAll()
                 return
             }
 
@@ -90,7 +89,6 @@ final class ScreenshotIndexer: ObservableObject {
 
             for record in inaccessibleRecords {
                 context.delete(record)
-                await SpotlightIndexer.delete(localIdentifier: record.localIdentifier)
             }
 
             try context.save()
@@ -112,7 +110,6 @@ final class ScreenshotIndexer: ObservableObject {
             let existingRecords = try context.fetch(FetchDescriptor<ScreenshotRecord>())
             refreshExistingRecords(existingRecords)
             try context.save()
-            await SpotlightIndexer.index(existingRecords)
 
             let existingIDs = Set(existingRecords.map(\.localIdentifier))
             let assets = fetchScreenshotAssets().filter { !existingIDs.contains($0.localIdentifier) }
@@ -158,7 +155,6 @@ final class ScreenshotIndexer: ObservableObject {
                 record.suggestedTags = suggestion.tags
                 record.indexedAt = .now
                 try context.save()
-                await SpotlightIndexer.index(record)
             }
 
             state = .complete(indexed: indexedCount)

@@ -17,13 +17,11 @@
 		111111111111111111111118 /* ScreenshotClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222228 /* ScreenshotClassifier.swift */; };
 		111111111111111111111119 /* PhotoImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222229 /* PhotoImageLoader.swift */; };
 		11111111111111111111111A /* ScreenshotIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222A /* ScreenshotIndexer.swift */; };
-		11111111111111111111111B /* SpotlightIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222B /* SpotlightIndexer.swift */; };
-		11111111111111111111111C /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222C /* AppPreferences.swift */; };
 		11111111111111111111111D /* ScreenshotSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222D /* ScreenshotSearch.swift */; };
 		11111111111111111111111E /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 222222222222222222222231 /* XCTest.framework */; };
 		11111111111111111111111F /* ScreenshotClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222F /* ScreenshotClassifierTests.swift */; };
 		111111111111111111111120 /* ScreenshotSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222230 /* ScreenshotSearchTests.swift */; };
-		111111111111111111111121 /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222232 /* AppSettingsView.swift */; };
+		111111111111111111111122 /* TagViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222233 /* TagViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,14 +46,12 @@
 		222222222222222222222228 /* ScreenshotClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotClassifier.swift; sourceTree = "<group>"; };
 		222222222222222222222229 /* PhotoImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoImageLoader.swift; sourceTree = "<group>"; };
 		22222222222222222222222A /* ScreenshotIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotIndexer.swift; sourceTree = "<group>"; };
-		22222222222222222222222B /* SpotlightIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndexer.swift; sourceTree = "<group>"; };
-		22222222222222222222222C /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		22222222222222222222222D /* ScreenshotSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotSearch.swift; sourceTree = "<group>"; };
 		22222222222222222222222E /* ShottyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShottyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		22222222222222222222222F /* ScreenshotClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotClassifierTests.swift; sourceTree = "<group>"; };
 		222222222222222222222230 /* ScreenshotSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotSearchTests.swift; sourceTree = "<group>"; };
 		222222222222222222222231 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
-		222222222222222222222232 /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
+		222222222222222222222233 /* TagViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,7 +87,6 @@
 			isa = PBXGroup;
 			children = (
 				222222222222222222222221 /* ShottyApp.swift */,
-				22222222222222222222222C /* AppPreferences.swift */,
 				222222222222222222222222 /* ContentView.swift */,
 				444444444444444444444444 /* Models */,
 				444444444444444444444445 /* Views */,
@@ -121,7 +116,7 @@
 		444444444444444444444445 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				222222222222222222222232 /* AppSettingsView.swift */,
+				222222222222222222222233 /* TagViews.swift */,
 				222222222222222222222224 /* HomeView.swift */,
 				222222222222222222222225 /* ActivityView.swift */,
 				222222222222222222222226 /* SettingsView.swift */,
@@ -136,7 +131,6 @@
 				222222222222222222222229 /* PhotoImageLoader.swift */,
 				22222222222222222222222D /* ScreenshotSearch.swift */,
 				22222222222222222222222A /* ScreenshotIndexer.swift */,
-				22222222222222222222222B /* SpotlightIndexer.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -247,18 +241,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				111111111111111111111111 /* ShottyApp.swift in Sources */,
-				11111111111111111111111C /* AppPreferences.swift in Sources */,
 				111111111111111111111112 /* ContentView.swift in Sources */,
 				111111111111111111111113 /* ScreenshotRecord.swift in Sources */,
 				111111111111111111111114 /* HomeView.swift in Sources */,
 				111111111111111111111115 /* ActivityView.swift in Sources */,
-				111111111111111111111121 /* AppSettingsView.swift in Sources */,
+				111111111111111111111122 /* TagViews.swift in Sources */,
 				111111111111111111111116 /* SettingsView.swift in Sources */,
 				111111111111111111111118 /* ScreenshotClassifier.swift in Sources */,
 				111111111111111111111119 /* PhotoImageLoader.swift in Sources */,
 				11111111111111111111111D /* ScreenshotSearch.swift in Sources */,
 				11111111111111111111111A /* ScreenshotIndexer.swift in Sources */,
-				11111111111111111111111B /* SpotlightIndexer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

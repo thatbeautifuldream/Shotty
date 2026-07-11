@@ -57,36 +57,17 @@ private struct TagList: View {
     let suggestedTags: [String]
 
     var body: some View {
-        HStack(spacing: 6) {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
             ForEach(userTags, id: \.self) { tag in
-                TagChip(title: tag, isSuggested: false)
+                TagChip(title: tag, tone: .owned)
             }
 
             ForEach(suggestedTags, id: \.self) { tag in
-                TagChip(title: tag, isSuggested: true)
+                TagChip(title: tag, tone: .suggested)
             }
         }
-        .lineLimit(1)
-    }
-}
-
-private struct TagChip: View {
-    let title: String
-    let isSuggested: Bool
-
-    var body: some View {
-        Text(isSuggested ? "\(title)?" : title)
-            .font(.caption)
-            .foregroundStyle(isSuggested ? .tertiary : .secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(isSuggested ? Color(.systemBackground) : Color(.tertiarySystemFill), in: Capsule())
-            .overlay {
-                if isSuggested {
-                    Capsule()
-                        .strokeBorder(.secondary.opacity(0.16))
-                }
-            }
+        }
     }
 }
 

@@ -7,7 +7,6 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ScreenshotRecord.capturedAt, order: .reverse) private var records: [ScreenshotRecord]
 
-    @AppStorage(AppPreferences.spotlightIncludesExtractedTextKey) private var spotlightIncludesExtractedText = true
     @StateObject private var indexer = ScreenshotIndexer()
     @State private var searchText = ""
     @State private var rankedResults: [ScreenshotSearchResult] = []
@@ -32,21 +31,8 @@ struct ContentView: View {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search screenshots")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        AppSettingsView()
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
-                    .accessibilityLabel("Settings")
-                }
-            }
             .task {
                 await refreshInboxFromPhotos()
-            }
-            .task(id: spotlightIncludesExtractedText) {
-                await SpotlightIndexer.index(records)
             }
             .task(id: SearchRefreshKey(query: searchText, snapshots: records.map(ScreenshotSearchSnapshot.init))) {
                 await refreshSearchResults()
